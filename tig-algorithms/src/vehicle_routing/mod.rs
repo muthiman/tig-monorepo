@@ -3,7 +3,7 @@ pub mod dynamic_colonies;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tig_challenges::{<challenge_name>::*, *};
+    use tig_challenges::{vehicle_routing::*, *};
 
     #[test]
     fn test_dynamic_colonies() {
