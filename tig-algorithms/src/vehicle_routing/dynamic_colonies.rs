@@ -126,4 +126,4 @@ fn local_search<'a>(rng: &mut StdRng, mut solution: Solution<'a>, challenge: &'a
     }
 
     best_solution
-}
+} 
