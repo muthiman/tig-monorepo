@@ -22,6 +22,7 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 use rand::Rng;
 use std::f64;
+use std::hash::{Hash, Hasher};
 
 // Define a trait for the required methods on the Solution struct
 trait SolutionExt {
@@ -36,11 +37,25 @@ impl SolutionExt for Solution {
     }
 
     fn total_distance(&self, challenge: &Challenge) -> f64 {
-        self.routes[0].windows(2).map(|w| challenge.distance_matrix[w[0]][w[1]]).sum()
+        self.routes[0].windows(2).map(|w| challenge.distance_matrix[w[0]][w[1]] as f64).sum()
     }
 
     fn clone(&self) -> Self {
         Solution { routes: self.routes.clone() }
+    }
+}
+
+impl PartialEq for Solution {
+    fn eq(&self, other: &Self) -> bool {
+        self.routes == other.routes
+    }
+}
+
+impl Eq for Solution {}
+
+impl Hash for Solution {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.routes.hash(state);
     }
 }
 
@@ -93,7 +108,7 @@ fn generate_greedy_solution(challenge: &Challenge) -> Solution {
         let mut closest_node = None;
 
         for &node in &remaining_nodes {
-            let distance = challenge.distance_matrix[*solution.routes[0].last().unwrap()][node];
+            let distance = challenge.distance_matrix[*solution.routes[0].last().unwrap()][node] as f64;
             if distance < min_distance {
                 min_distance = distance;
                 closest_node = Some(node);
