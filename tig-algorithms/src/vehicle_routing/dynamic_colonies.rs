@@ -20,6 +20,7 @@ use tig_challenges::vehicle_routing::{Challenge, Solution};
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
+use rand::Rng; // Added the necessary import for Rng
 
 pub fn solve_challenge(challenge: &Challenge) -> Result<Option<Solution>, String> {
     let mut rng = StdRng::seed_from_u64(challenge.seed as u64);
@@ -61,24 +62,24 @@ pub fn solve_challenge(challenge: &Challenge) -> Result<Option<Solution>, String
     Ok(best_solution)
 }
 
-fn generate_greedy_solution<'a>(challenge: &'a Challenge) -> Solution<'a> {
-    let mut solution = Solution::new(vec![&challenge.nodes[0]]);
-    let mut remaining_nodes: Vec<_> = challenge.nodes.iter().skip(1).collect();
+fn generate_greedy_solution(challenge: &Challenge) -> Solution {
+    let mut solution = Solution::new(vec![0]);
+    let mut remaining_nodes: Vec<_> = (1..challenge.distance_matrix.len()).collect();
 
     while !remaining_nodes.is_empty() {
         let mut min_distance = f64::INFINITY;
         let mut closest_node = None;
 
-        for node in &remaining_nodes {
-            let distance = solution.last().unwrap().distance_to(**node);
+        for &node in &remaining_nodes {
+            let distance = challenge.distance_matrix[*solution.routes.last().unwrap()][node];
             if distance < min_distance {
                 min_distance = distance;
-                closest_node = Some(*node);
+                closest_node = Some(node);
             }
         }
 
         if let Some(node) = closest_node {
-            solution.nodes.push(node);
+            solution.routes.push(node);
             remaining_nodes.retain(|&n| n != node);
         } else {
             break;
@@ -88,25 +89,25 @@ fn generate_greedy_solution<'a>(challenge: &'a Challenge) -> Solution<'a> {
     solution
 }
 
-fn generate_random_solution<'a>(rng: &mut StdRng, challenge: &'a Challenge) -> Solution<'a> {
-    let mut nodes: Vec<_> = challenge.nodes.iter().collect();
+fn generate_random_solution(rng: &mut StdRng, challenge: &Challenge) -> Solution {
+    let mut nodes: Vec<_> = (0..challenge.distance_matrix.len()).collect();
     nodes.shuffle(rng);
     Solution::new(nodes)
 }
 
-fn local_search<'a>(rng: &mut StdRng, mut solution: Solution<'a>, challenge: &'a Challenge) -> Solution<'a> {
+fn local_search(rng: &mut StdRng, mut solution: Solution, challenge: &Challenge) -> Solution {
     let mut best_solution = solution.clone();
     let mut best_distance = best_solution.total_distance(challenge);
 
     for _ in 0..10000 {
         let mut neighbors = HashSet::new();
         for _ in 0..100 {
-            let a = rng.gen_range(0..solution.nodes.len());
-            let b = rng.gen_range(0..solution.nodes.len());
+            let a = rng.gen_range(0..solution.routes.len());
+            let b = rng.gen_range(0..solution.routes.len());
             if a != b {
-                solution.swap(a, b);
+                solution.routes.swap(a, b);
                 neighbors.insert(solution.clone());
-                solution.swap(a, b);
+                solution.routes.swap(a, b);
             }
         }
 
@@ -126,4 +127,20 @@ fn local_search<'a>(rng: &mut StdRng, mut solution: Solution<'a>, challenge: &'a
     }
 
     best_solution
-} 
+}
+
+// Assuming these methods are implemented for Solution
+impl Solution {
+    pub fn new(routes: Vec<usize>) -> Self {
+        Solution { routes }
+    }
+
+    pub fn total_distance(&self, challenge: &Challenge) -> f64 {
+        // Calculate the total distance of the solution
+        self.routes.windows(2).map(|w| challenge.distance_matrix[w[0]][w[1]]).sum()
+    }
+
+    pub fn clone(&self) -> Self {
+        Solution { routes: self.routes.clone() }
+    }
+}
