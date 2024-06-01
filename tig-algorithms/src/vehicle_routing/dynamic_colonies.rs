@@ -23,7 +23,6 @@ use std::f64;
 use std::hash::{Hash, Hasher};
 
 // Wrapper type for Solution
-#[derive(Clone)]
 struct SolutionWrapper(Solution);
 
 impl SolutionWrapper {
@@ -33,6 +32,14 @@ impl SolutionWrapper {
 
     fn total_distance(&self, challenge: &Challenge) -> f64 {
         self.0.routes[0].windows(2).map(|w| challenge.distance_matrix[w[0]][w[1]] as f64).sum()
+    }
+}
+
+impl Clone for SolutionWrapper {
+    fn clone(&self) -> Self {
+        SolutionWrapper(Solution {
+            routes: self.0.routes.clone(),
+        })
     }
 }
 
